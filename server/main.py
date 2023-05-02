@@ -1,3 +1,40 @@
+import sys
+sys.path.append( "/var/www/html/medscape/medscape-content-feed/linear_model/openai_poc/chatgpt-retrieval-plugin/medscape" )
+
+from custom_config import config, utils
+# environment = 'local'
+# config['LOG_PRINT'] = 0
+# config['LOG_NAME'] = 'chat-retrieval-plugin'
+
+# os.environ["REDIS_PORT"] = "7379"
+# os.environ["REDIS_DB"] = 1
+# from app import config, log
+
+# logLevel = log._nameToLevel.get(config['LOG_LEVEL'].upper())
+# logFormat = '[%(asctime)-15s] ' + environment + '.%(levelname)s: %(message)s'
+# if config['LOG_DAILY']:
+#     config['LOG_NAME'] += datetime.today().strftime("-%m-%d-%Y")
+
+# log.basicConfig(
+#     filename = storage_path('logs/%s.log' % config['LOG_NAME']),
+#     level = logLevel,
+#     format = logFormat
+# )
+
+# from dotenv import load_dotenv
+# load_dotenv('/var/www/html/medscape/medscape-content-feed/linear_model/.env')
+
+# logFormat = '[%(asctime)-15s] ' + environment + '.%(levelname)s: %(message)s'
+# root = log.getLogger()
+# logLevel = log._nameToLevel.get('DEBUG')
+# root.setLevel(logLevel)
+
+# handler = log.StreamHandler(sys.stdout)
+# handler.setLevel(logLevel)
+# handler.setFormatter(log.Formatter(logFormat))
+# root.addHandler(handler)
+
+
 import os
 from typing import Optional
 import uvicorn
@@ -30,7 +67,9 @@ def validate_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sc
 
 
 app = FastAPI(dependencies=[Depends(validate_token)])
-app.mount("/.well-known", StaticFiles(directory=".well-known"), name="static")
+#app.mount("/var/www/html/medscape/medscape-content-feed/linear_model/openai_poc/chatgpt-retrieval-plugin/.well-known", StaticFiles(directory=".well-known"), name="static")
+# app.mount("/.well-known", StaticFiles(directory="../.well-known"), name="static")
+# app.mount("/.well-known", StaticFiles(directory="../.well-known"), name="static")
 
 # Create a sub-application, in order to access just the query endpoint in an OpenAPI schema, found at http://0.0.0.0:8000/sub/openapi.json when the app is running locally
 sub_app = FastAPI(
@@ -96,6 +135,31 @@ async def query_main(
         results = await datastore.query(
             request.queries,
         )
+        ### custom medscape ###
+        # add text chunks
+        article_ids = []
+        chunks = []
+        for query in results:
+            for chunk in query.results:
+                article_id, chunk = chunk.id.split('_')
+                article_ids.append(article_id)
+                chunks.append(chunk)
+
+        db = utils.db_connection()
+        query = "select article_id, chunk, text from poc_gpt_qna_article_embeddings where article_id in (%s) and chunk in (%s)" % (
+            utils.implode(',', article_ids),
+            utils.implode(',', chunks)
+        )
+        df_chunks = utils.read_sql_inmem_uncompressed(query, db)
+        if not df_chunks.empty:
+            for query in results:
+                for chunk in query.results:
+                    article_id, _chunk = chunk.id.split('_')
+                    df_chunk = df_chunks[(df_chunks['article_id']==int(article_id)) & (df_chunks['chunk']==int(_chunk))]
+                    if not df_chunk.empty:
+                        chunk.text = df_chunk.iloc(0)[0].text
+
+        ### custom medscape ###
         return QueryResponse(results=results)
     except Exception as e:
         print("Error:", e)
@@ -152,4 +216,8 @@ async def startup():
 
 
 def start():
-    uvicorn.run("server.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("server.main:app", host="0.0.0.0", port=8002, reload=True)
+
+
+if __name__ == "__main__":
+    start()

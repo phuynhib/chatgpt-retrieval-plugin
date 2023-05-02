@@ -319,7 +319,8 @@ class RedisDataStore(DataStore):
                 doc_json = json.loads(doc.json)
                 # Create document chunk object with score
                 result = DocumentChunkWithScore(
-                    id=doc_json["metadata"]["document_id"],
+                    # id=doc_json["metadata"]["document_id"],
+                    id=doc_json["chunk_id"],
                     score=doc.score,
                     text=doc_json["text"],
                     metadata=doc_json["metadata"]
