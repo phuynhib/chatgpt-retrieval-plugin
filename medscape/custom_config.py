@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append( "/var/www/html/medscape/medscape-content-feed/linear_model" )
+sys.path.append( os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))) )
 
 from config import config
 environment = 'local'
