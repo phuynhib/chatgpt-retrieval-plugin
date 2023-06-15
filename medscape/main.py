@@ -3,7 +3,7 @@
 
 import os
 import sys
-sys.path.append( os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + '/medscape' )
+sys.path.append( os.path.dirname(os.path.realpath(__file__)) )
 from custom_config import utils
 
 
@@ -48,7 +48,7 @@ app.add_middleware(
 
 @app.route("/.well-known/ai-plugin.json")
 async def get_manifest(request):
-    file_path = "./local-server/ai-plugin.json"
+    file_path = "./medscape/ai-plugin.json"
     return FileResponse(file_path, media_type="text/json")
 
 
@@ -60,7 +60,7 @@ async def get_logo(request):
 
 @app.route("/.well-known/openapi.yaml")
 async def get_openapi(request):
-    file_path = "./local-server/openapi.yaml"
+    file_path = "./medscape/openapi.yaml"
     return FileResponse(file_path, media_type="text/json")
 
 
@@ -180,4 +180,4 @@ async def startup():
 
 
 def start():
-    uvicorn.run("local-server.main:app", host="0.0.0.0", port=PORT, reload=True)
+    uvicorn.run("medscape.main:app", host="0.0.0.0", port=PORT, reload=True)
