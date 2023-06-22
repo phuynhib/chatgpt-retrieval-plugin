@@ -181,3 +181,7 @@ async def startup():
 
 def start():
     uvicorn.run("medscape.main:app", host="0.0.0.0", port=PORT, reload=True)
+
+# This allows us to debug fastapi in VSCode
+if __name__ == "__main__":
+    start()
