@@ -1,9 +1,9 @@
-from custom_config import config
 import os 
 import sys
 sys.path.append( os.path.dirname(os.path.dirname(os.path.realpath(__file__))) )
-import utils
+# import utils
 import pandas as pd
+from Arguments import Arguments
 
 from datastore.factory import get_datastore
 from datastore.providers.redis_datastore import RedisDataStore
@@ -21,6 +21,14 @@ from models.models import (
 # from models.models import Document, DocumentMetadata, Source
 from typing import Dict, List, Optional
 import asyncio
+
+arguments = Arguments()
+arguments.add(
+    '--pickle', type=str, default=None,
+    required=True,
+    help='pickle file'
+)
+args = arguments.all()
 
 # datastore = None
 # async def test():
@@ -90,7 +98,7 @@ def get_document_chunks_from_db(pickle_file
     #     return {}
 
     article_ids = documents.article_id.unique()
-    article_ids = article_ids[:10]
+    # article_ids = article_ids[:10]
     for article_id in article_ids:
         doc_id = str(article_id)
         article_chunks = documents[documents['article_id']==article_id]
@@ -134,8 +142,8 @@ def get_document_chunks_from_db(pickle_file
 
     return chunks
 
-pickle_file = '/var/www/html/medscape/medscape-content-feed/linear_model/storage/shared/df_cache/EMBEDDINGS-2023-10000-0/EMBEDDINGS-2023-10000-0_20230421193157.pkl'
-chunks = get_document_chunks_from_db(pickle_file)
+
+chunks = get_document_chunks_from_db(args.pickle)
 
 async def main():
     datastore =await get_datastore()
@@ -144,4 +152,3 @@ async def main():
 asyncio.run(main())
 
 # asyncio.run(datastore.test())
-i=1
